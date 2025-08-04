@@ -1,0 +1,178 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  useColorScheme,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Image
+} from 'react-native';
+
+import { OPENROUTER_API_KEY } from '@env';
+
+export default function App() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const isDark = useColorScheme() === 'dark';
+
+  const imageUrl =
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg';
+
+  const sendToAI = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = { role: 'user', text: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+     try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: "Bearer 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",
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini", // Ensure this model is valid
+        messages: [
+          { role: 'system', content: 'You are a helpful AI assistant.' },
+          ...updatedMessages.map(m => ({ role: m.role, content: m.text })),
+        ],
+      }),
+    });
+
+      const data = await res.json();
+      const botText = data?.choices?.[0]?.message?.content || 'No response from AI.';
+      const botMessage = { role: 'bot', text: botText };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'bot', text: ' API Error occurred.' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: isDark ? '#121212' : '#f4f4f4' }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <Text style={styles.heading}>🤖 Gemini Image+Text ChatBot</Text>
+
+      <Image source={{ uri: imageUrl }} style={styles.image} />
+
+      <ScrollView style={styles.chatBox} contentContainerStyle={{ paddingBottom: 20 }}>
+        {messages.map((msg, index) => (
+          <View
+            key={index}
+            style={[
+              styles.messageBubble,
+              msg.role === 'user' ? styles.userBubble : styles.botBubble,
+            ]}
+          >
+            <Text style={styles.messageText}>{msg.text}</Text>
+          </View>
+        ))}
+
+        {loading && (
+          <ActivityIndicator size="large" color="#f7b731" style={{ marginTop: 10 }} />
+        )}
+      </ScrollView>
+
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ask about the image..."
+          placeholderTextColor="#999"
+          value={input}
+          onChangeText={setInput}
+          multiline
+        />
+        <TouchableOpacity style={styles.sendButton} onPress={sendToAI}>
+          <Text style={styles.sendText}>➤</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 50,
+    paddingHorizontal: 16,
+  },
+  heading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: 12,
+  },
+  chatBox: {
+    flex: 1,
+    marginVertical: 10,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 18,
+    marginVertical: 6,
+  },
+  userBubble: {
+    backgroundColor: '#f7b731',
+    alignSelf: 'flex-end',
+    borderTopRightRadius: 4,
+  },
+  botBubble: {
+    backgroundColor: '#dfe6e9',
+    alignSelf: 'flex-start',
+    borderTopLeftRadius: 4,
+  },
+  messageText: {
+    fontSize: 16,
+    color: '#222',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 20,
+    elevation: 3,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    color: '#000',
+    maxHeight: 100,
+  },
+  sendButton: {
+    backgroundColor: '#f7b731',
+    padding: 10,
+    borderRadius: 50,
+    marginLeft: 8,
+  },
+  sendText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  image: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+});
