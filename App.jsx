@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+// import {OPENROUTER_API_KEY} from ''
 
 export default function ChatBotScreen() {
   const [input, setInput] = useState('');
@@ -32,7 +33,7 @@ export default function ChatBotScreen() {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer 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',
+          Authorization: `${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
